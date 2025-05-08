@@ -1,9 +1,9 @@
 x-redash-service: &redash-service
-  image: redash/redash:__TAG__
+  image: redash/redash:latest
   depends_on:
     - postgres
     - redis
-  env_file: /opt/redash/env
+  env_file: .env
   restart: always
 services:
   server:
@@ -13,11 +13,15 @@ services:
       - "5000:5000"
     environment:
       REDASH_WEB_WORKERS: 4
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   scheduler:
     <<: *redash-service
     command: scheduler
     depends_on:
       - server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   scheduled_worker:
     <<: *redash-service
     command: worker
@@ -38,10 +42,10 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
   postgres:
-    image: pgautoupgrade/pgautoupgrade:latest
-    env_file: /opt/redash/env
+    image: postgres:15-alpine
+    env_file: .env
     volumes:
-      - /opt/redash/postgres-data:/var/lib/postgresql/data
+      - ./postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
   nginx:
     image: redash/nginx:latest
@@ -58,3 +62,5 @@ services:
     environment:
       QUEUES: "periodic,emails,default"
       WORKERS_COUNT: 1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
